@@ -12,3 +12,6 @@ body{font-family:"IBM Plex Sans",system-ui,sans-serif;background:var(--paper);co
 a{color:var(--accent)}
 .topbar{background:var(--ink);color:#fff}
 @media(max-width:768px){.auth-wrap{grid-template-columns:1fr}.auth-side{padding:2rem 1.5rem}.auth-side h1{font-size:1.7rem}}
+.avatar-btn{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.55);padding:0;overflow:hidden;background:#0f766e;color:#fff;font:600 .8rem "IBM Plex Sans",system-ui,sans-serif;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.avatar-btn:hover,.avatar-btn:focus-visible{border-color:#fff;outline:none}
+.avatar-btn img{width:100%;height:100%;object-fit:cover;display:block}

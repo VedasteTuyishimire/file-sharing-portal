@@ -1,0 +1,14 @@
+:root{--ink:#1f2a44;--paper:#f4f6f8;--line:#d9dee5;--accent:#0f766e;--accent-dark:#0b5a54}
+body{font-family:"IBM Plex Sans",system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+.auth-wrap{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+.auth-side{background:var(--ink);color:#fff;padding:4rem 3rem;display:flex;flex-direction:column;justify-content:center}
+.auth-side h1{font-size:2.4rem;font-weight:600;max-width:14ch;line-height:1.15}
+.auth-side p{color:#b9c2d3;max-width:36ch;margin-top:1rem}
+.auth-form{display:flex;align-items:center;justify-content:center;padding:2rem}
+.auth-form form{width:100%;max-width:380px}
+.btn-main{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-main:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff}
+.form-control:focus,.form-select:focus{border-color:var(--accent);box-shadow:0 0 0 .2rem rgba(15,118,110,.2)}
+a{color:var(--accent)}
+.topbar{background:var(--ink);color:#fff}
+@media(max-width:768px){.auth-wrap{grid-template-columns:1fr}.auth-side{padding:2rem 1.5rem}.auth-side h1{font-size:1.7rem}}

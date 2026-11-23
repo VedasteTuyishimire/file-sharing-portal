@@ -74,3 +74,13 @@ async function deleteFile(file, userId) {
   const { error } = await supabaseClient.from("files").delete().eq("id", file.id);
   return { error: error ? error.message : null };
 }
+
+// ---------- download counts (owner) ----------
+async function getDownloadCounts(fileIds) {
+  if (!fileIds.length) return {};
+  const { data } = await supabaseClient.from("activity_log")
+    .select("file_id").eq("action", "download").in("file_id", fileIds);
+  const counts = {};
+  (data || []).forEach(r => { counts[r.file_id] = (counts[r.file_id] || 0) + 1; });
+  return counts;
+}
