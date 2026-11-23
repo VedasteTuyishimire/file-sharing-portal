@@ -181,3 +181,13 @@ create policy "recipients read shared files"
 -- =====================================================================
 -- DONE. Check: Table Editor shows 4 tables, Storage shows bucket "files".
 -- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- PART D: TABLE PERMISSIONS (needed on newer Supabase projects)
+-- ---------------------------------------------------------------------
+grant usage on schema public to anon, authenticated;
+grant select on public.profiles to authenticated;
+grant select, insert, update, delete on public.files to authenticated;
+grant select, insert, update, delete on public.shares to authenticated;
+grant select, insert on public.activity_log to authenticated;
+grant usage, select on all sequences in schema public to authenticated;

@@ -1,5 +1,5 @@
-// Paste your own values from Supabase > Project Settings > API
-const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY"; // anon/public key ONLY, never service_role
+// Supabase connection (publishable key is safe in browser code; never use a secret/service_role key here)
+const SUPABASE_URL = "https://baopjcffpxpymkycqrem.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Lycbq26UZmcWbgr8jz9Raw_ZMfZ57RN";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

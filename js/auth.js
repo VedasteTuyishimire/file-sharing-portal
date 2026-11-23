@@ -9,6 +9,7 @@ function showMessage(id, text, type = "danger") {
 async function getProfile(userId) {
   const { data, error } = await supabaseClient
     .from("profiles").select("*").eq("id", userId).single();
+  if (error) console.error("Profile error:", error.message);
   return error ? null : data;
 }
 

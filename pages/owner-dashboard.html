@@ -15,17 +15,104 @@
     <div><span id="who" class="me-3"></span><button class="btn btn-sm btn-outline-light" onclick="logoutUser()">Log out</button></div>
   </div>
 </nav>
-<main class="container py-5">
-  <h1 class="h3">Owner dashboard</h1>
-  <p class="text-muted">Your uploaded files will appear here (Section 4).</p>
+
+<main class="container py-4">
+  <div id="msg" class="alert d-none" role="alert"></div>
+
+  <section class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <h2 class="h5">Upload a file</h2>
+      <p class="text-muted small mb-3">PDF, DOCX, XLSX, PPTX, JPG, PNG or ZIP, up to 10 MB.</p>
+      <div class="d-flex gap-2 flex-wrap">
+        <input id="fileInput" type="file" class="form-control" style="max-width:380px"
+               accept=".pdf,.docx,.xlsx,.pptx,.jpg,.jpeg,.png,.zip">
+        <button id="uploadBtn" class="btn btn-main">Upload</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm">
+    <div class="card-body">
+      <h2 class="h5 mb-3">My files</h2>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Uploaded</th><th class="text-end">Actions</th></tr></thead>
+          <tbody id="fileRows"><tr><td colspan="5" class="text-muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 </main>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/supabaseClient.js"></script>
 <script src="../js/auth.js"></script>
+<script src="../js/files.js"></script>
 <script>
+let me = null;
+let myFiles = [];
+
+function cell(text) { const td = document.createElement("td"); td.textContent = text; return td; }
+function actionBtn(label, cls, handler) {
+  const b = document.createElement("button");
+  b.className = "btn btn-sm " + cls; b.textContent = label; b.onclick = handler; return b;
+}
+
+async function refresh() {
+  const { data, error } = await listMyFiles(me.id);
+  const body = document.getElementById("fileRows");
+  body.innerHTML = "";
+  if (error) return showMessage("msg", "Could not load files: " + error.message);
+  myFiles = data;
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="5" class="text-muted">No files yet. Upload your first file above.</td></tr>';
+    return;
+  }
+  data.forEach(f => {
+    const tr = document.createElement("tr");
+    tr.append(cell(f.original_name), cell((f.file_type || "").toUpperCase()), cell(formatSize(f.file_size)), cell(formatDate(f.uploaded_at)));
+    const td = document.createElement("td");
+    td.className = "text-end text-nowrap";
+    td.append(
+      actionBtn("Download", "btn-outline-secondary me-1", async () => {
+        const r = await downloadFile(f, me.id);
+        if (r.error) showMessage("msg", "Download failed: " + r.error);
+      }),
+      actionBtn("Rename", "btn-outline-secondary me-1", async () => {
+        const n = prompt("New file name:", f.original_name);
+        if (n === null) return;
+        const r = await renameFile(f, n);
+        r.error ? showMessage("msg", r.error) : (showMessage("msg", "File renamed.", "success"), refresh());
+      }),
+      actionBtn("Delete", "btn-outline-danger", async () => {
+        if (!confirm('Delete "' + f.original_name + '"? This cannot be undone.')) return;
+        const r = await deleteFile(f, me.id);
+        r.error ? showMessage("msg", r.error) : (showMessage("msg", "File deleted.", "success"), refresh());
+      })
+    );
+    tr.append(td);
+    body.append(tr);
+  });
+}
+
+document.getElementById("uploadBtn").addEventListener("click", async () => {
+  const input = document.getElementById("fileInput");
+  if (!input.files.length) return showMessage("msg", "Choose a file first.");
+  const btn = document.getElementById("uploadBtn");
+  btn.disabled = true; btn.textContent = "Uploading...";
+  const r = await uploadFile(input.files[0], me.id);
+  btn.disabled = false; btn.textContent = "Upload";
+  if (r.error) return showMessage("msg", r.error);
+  input.value = "";
+  showMessage("msg", "File uploaded.", "success");
+  refresh();
+});
+
 (async () => {
-  const profile = await requireRole("owner");
-  if (profile) document.getElementById("who").textContent = profile.full_name || profile.email;
+  me = await requireRole("owner");
+  if (!me) return;
+  document.getElementById("who").textContent = me.full_name || me.email;
+  refresh();
 })();
 </script>
 </body>
