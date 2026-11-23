@@ -15,17 +15,66 @@
     <div><span id="who" class="me-3"></span><button class="btn btn-sm btn-outline-light" onclick="logoutUser()">Log out</button></div>
   </div>
 </nav>
-<main class="container py-5">
-  <h1 class="h3">Shared with me</h1>
-  <p class="text-muted">Files shared with you will appear here (Section 5).</p>
+
+<main class="container py-4">
+  <div id="msg" class="alert d-none" role="alert"></div>
+  <section class="card border-0 shadow-sm">
+    <div class="card-body">
+      <h1 class="h5 mb-3">Files shared with me</h1>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead><tr><th>Name</th><th>From</th><th>Size</th><th>Shared</th><th>Expires</th><th class="text-end">Action</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="6" class="text-muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 </main>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/supabaseClient.js"></script>
 <script src="../js/auth.js"></script>
+<script src="../js/files.js"></script>
+<script src="../js/shares.js"></script>
 <script>
+let me = null;
+function cell(t) { const td = document.createElement("td"); td.textContent = t; return td; }
+
+async function refresh() {
+  const body = document.getElementById("rows");
+  const { data, error } = await listSharedWithMe(me.id);
+  body.innerHTML = "";
+  if (error) return showMessage("msg", "Could not load files: " + error.message);
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="6" class="text-muted">No files have been shared with you yet.</td></tr>';
+    return;
+  }
+  data.forEach(s => {
+    const f = s.file;
+    const tr = document.createElement("tr");
+    tr.append(cell(f.original_name),
+              cell(f.owner ? (f.owner.full_name || f.owner.email) : "Unknown"),
+              cell(formatSize(f.file_size)),
+              cell(formatDate(s.shared_at)),
+              cell(s.expires_at ? formatDate(s.expires_at) : "No expiry"));
+    const td = document.createElement("td");
+    td.className = "text-end";
+    const b = document.createElement("button");
+    b.className = "btn btn-sm btn-main";
+    b.textContent = "Download";
+    b.onclick = async () => {
+      const r = await downloadFile(f, me.id);
+      if (r.error) showMessage("msg", "Download failed: " + r.error + ". Your access may have been removed or expired.");
+    };
+    td.append(b); tr.append(td); body.append(tr);
+  });
+}
+
 (async () => {
-  const profile = await requireRole("recipient");
-  if (profile) document.getElementById("who").textContent = profile.full_name || profile.email;
+  me = await requireRole("recipient");
+  if (!me) return;
+  document.getElementById("who").textContent = me.full_name || me.email;
+  refresh();
 })();
 </script>
 </body>

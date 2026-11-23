@@ -12,7 +12,7 @@
 <nav class="topbar py-3">
   <div class="container d-flex justify-content-between align-items-center">
     <strong>File Sharing Portal</strong>
-    <div><span id="who" class="me-3"></span><button class="btn btn-sm btn-outline-light" onclick="logoutUser()">Log out</button></div>
+    <div><a href="activity.html" class="text-white me-3">Activity</a><span id="who" class="me-3"></span><button class="btn btn-sm btn-outline-light" onclick="logoutUser()">Log out</button></div>
   </div>
 </nav>
 
@@ -44,10 +44,38 @@
   </section>
 </main>
 
+<div class="modal fade" id="shareModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title h5" id="shareTitle">Share file</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="shareMsg" class="alert d-none" role="alert"></div>
+        <div class="mb-3">
+          <label for="shareEmail" class="form-label">Recipient email</label>
+          <input id="shareEmail" type="email" class="form-control" placeholder="recipient@example.com">
+        </div>
+        <div class="mb-3">
+          <label for="shareExpiry" class="form-label">Access expires on (optional)</label>
+          <input id="shareExpiry" type="date" class="form-control">
+        </div>
+        <button id="shareBtn" class="btn btn-main w-100">Share</button>
+        <hr>
+        <h3 class="h6">Who has access</h3>
+        <ul id="shareList" class="list-group list-group-flush"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/supabaseClient.js"></script>
 <script src="../js/auth.js"></script>
 <script src="../js/files.js"></script>
+<script src="../js/shares.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 let me = null;
 let myFiles = [];
@@ -78,6 +106,7 @@ async function refresh() {
         const r = await downloadFile(f, me.id);
         if (r.error) showMessage("msg", "Download failed: " + r.error);
       }),
+      actionBtn("Share", "btn-main me-1", () => openShare(f)),
       actionBtn("Rename", "btn-outline-secondary me-1", async () => {
         const n = prompt("New file name:", f.original_name);
         if (n === null) return;
@@ -106,6 +135,73 @@ document.getElementById("uploadBtn").addEventListener("click", async () => {
   input.value = "";
   showMessage("msg", "File uploaded.", "success");
   refresh();
+});
+
+let shareTarget = null;
+let shareModal = null;
+
+function shareStatus(sh) {
+  if (sh.status === "revoked") return ["Revoked", "secondary"];
+  if (sh.expires_at && new Date(sh.expires_at) <= new Date()) return ["Expired", "warning"];
+  return ["Active", "success"];
+}
+
+async function renderShares() {
+  const list = document.getElementById("shareList");
+  list.innerHTML = "";
+  const { data, error } = await listSharesForFile(shareTarget.id);
+  if (error) { list.innerHTML = '<li class="list-group-item text-danger">Could not load shares.</li>'; return; }
+  if (!data.length) { list.innerHTML = '<li class="list-group-item text-muted">Not shared with anyone yet.</li>'; return; }
+  data.forEach(sh => {
+    const [label, color] = shareStatus(sh);
+    const li = document.createElement("li");
+    li.className = "list-group-item d-flex justify-content-between align-items-center px-0";
+    const info = document.createElement("div");
+    const who = document.createElement("div");
+    who.textContent = sh.recipient ? sh.recipient.email : "Unknown user";
+    const meta = document.createElement("small");
+    meta.className = "text-muted";
+    meta.textContent = sh.expires_at ? "Expires " + formatDate(sh.expires_at) : "No expiry";
+    info.append(who, meta);
+    const right = document.createElement("div");
+    const badge = document.createElement("span");
+    badge.className = "badge text-bg-" + color + " me-2";
+    badge.textContent = label;
+    right.append(badge);
+    if (sh.status === "active") {
+      right.append(actionBtn("Revoke", "btn-outline-danger", async () => {
+        if (!confirm("Remove this person's access?")) return;
+        const r = await revokeShare(sh, shareTarget.id, me.id);
+        r.error ? showMessage("shareMsg", r.error) : renderShares();
+      }));
+    }
+    li.append(info, right);
+    list.append(li);
+  });
+}
+
+function openShare(f) {
+  shareTarget = f;
+  document.getElementById("shareTitle").textContent = "Share: " + f.original_name;
+  document.getElementById("shareEmail").value = "";
+  const d = document.getElementById("shareExpiry");
+  d.value = ""; d.min = new Date().toISOString().split("T")[0];
+  document.getElementById("shareMsg").classList.add("d-none");
+  if (!shareModal) shareModal = new bootstrap.Modal(document.getElementById("shareModal"));
+  shareModal.show();
+  renderShares();
+}
+
+document.getElementById("shareBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("shareBtn");
+  btn.disabled = true; btn.textContent = "Sharing...";
+  const r = await shareFile(shareTarget, document.getElementById("shareEmail").value,
+                            document.getElementById("shareExpiry").value, me.id);
+  btn.disabled = false; btn.textContent = "Share";
+  if (r.error) return showMessage("shareMsg", r.error);
+  showMessage("shareMsg", "File shared.", "success");
+  document.getElementById("shareEmail").value = "";
+  renderShares();
 });
 
 (async () => {

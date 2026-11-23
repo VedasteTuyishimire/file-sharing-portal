@@ -191,3 +191,11 @@ grant select, insert, update, delete on public.files to authenticated;
 grant select, insert, update, delete on public.shares to authenticated;
 grant select, insert on public.activity_log to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
+
+-- ---------------------------------------------------------------------
+-- PART E: owners can see activity (downloads, shares) on their own files
+-- ---------------------------------------------------------------------
+drop policy if exists "owners read log of own files" on public.activity_log;
+create policy "owners read log of own files"
+  on public.activity_log for select to authenticated
+  using (file_id is not null and public.is_file_owner(file_id));
