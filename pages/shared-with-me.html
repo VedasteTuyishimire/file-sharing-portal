@@ -27,7 +27,7 @@
         <div class="col-md-6 d-flex align-items-center text-muted small" id="rowCount"></div>
       </div>
       <div class="table-responsive">
-        <table class="table align-middle mb-0">
+        <table class="table table-stack align-middle mb-0">
           <thead><tr><th>Name</th><th>From</th><th>Size</th><th>Shared</th><th>Expires</th><th class="text-end">Action</th></tr></thead>
           <tbody id="rows"><tr><td colspan="6" class="text-muted">Loading...</td></tr></tbody>
         </table>
@@ -47,7 +47,7 @@ let me = null;
 let all = [];
 let lastSeen = 0;
 
-function cell(t) { const td = document.createElement("td"); td.textContent = t; return td; }
+function cell(t, label) { const td = document.createElement("td"); td.textContent = t; if (label) td.dataset.label = label; return td; }
 function senderOf(f) { return f.owner ? (f.owner.full_name || f.owner.email) : "Unknown"; }
 
 function render() {
@@ -62,14 +62,15 @@ function render() {
     const f = s.file;
     const tr = document.createElement("tr");
     const nameTd = document.createElement("td");
+    nameTd.dataset.label = "Name";
     nameTd.textContent = f.original_name + " ";
     if (new Date(s.shared_at).getTime() > lastSeen) {
       const badge = document.createElement("span");
       badge.className = "badge text-bg-success"; badge.textContent = "New";
       nameTd.append(badge);
     }
-    tr.append(nameTd, cell(senderOf(f)), cell(formatSize(f.file_size)), cell(formatDate(s.shared_at)),
-              cell(s.expires_at ? formatDate(s.expires_at) : "No expiry"));
+    tr.append(nameTd, cell(senderOf(f), "From"), cell(formatSize(f.file_size), "Size"), cell(formatDate(s.shared_at), "Shared"),
+              cell(s.expires_at ? formatDate(s.expires_at) : "No expiry", "Expires"));
     const td = document.createElement("td");
     td.className = "text-end";
     const b = document.createElement("button");

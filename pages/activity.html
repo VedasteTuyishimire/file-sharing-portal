@@ -23,7 +23,7 @@
       <h1 class="h5">Activity log</h1>
       <p class="text-muted small">The latest 100 actions on your files, including downloads by recipients.</p>
       <div class="table-responsive">
-        <table class="table align-middle mb-0">
+        <table class="table table-stack align-middle mb-0">
           <thead><tr><th>When</th><th>Who</th><th>Action</th><th>File</th></tr></thead>
           <tbody id="rows"><tr><td colspan="4" class="text-muted">Loading...</td></tr></tbody>
         </table>
@@ -38,7 +38,7 @@
 <script src="../js/avatar.js"></script>
 <script>
 const LABELS = { upload: "Uploaded", share: "Shared", revoke: "Revoked access", download: "Downloaded", delete: "Deleted" };
-function cell(t) { const td = document.createElement("td"); td.textContent = t; return td; }
+function cell(t, label) { const td = document.createElement("td"); td.textContent = t; if (label) td.dataset.label = label; return td; }
 
 (async () => {
   const me = await requireRole("owner");
@@ -56,10 +56,10 @@ function cell(t) { const td = document.createElement("td"); td.textContent = t; 
   if (!data.length) { body.innerHTML = '<tr><td colspan="4" class="text-muted">No activity yet.</td></tr>'; return; }
   data.forEach(a => {
     const tr = document.createElement("tr");
-    tr.append(cell(new Date(a.created_at).toLocaleString()),
-              cell(a.user ? (a.user.full_name || a.user.email) : "Unknown"),
-              cell(LABELS[a.action] || a.action),
-              cell(a.file ? a.file.original_name : "(deleted file)"));
+    tr.append(cell(new Date(a.created_at).toLocaleString(), "When"),
+              cell(a.user ? (a.user.full_name || a.user.email) : "Unknown", "Who"),
+              cell(LABELS[a.action] || a.action, "Action"),
+              cell(a.file ? a.file.original_name : "(deleted file)", "File"));
     body.append(tr);
   });
 })();
